@@ -1,13 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 
-	"github.com/vmihailenco/msgpack"
 	"hitnail.net/gtfssimulator/gtfs"
 	"hitnail.net/gtfssimulator/util"
 )
@@ -49,31 +50,51 @@ func readGTFS(dir string) (gtfs.Schedule, error) {
 	return sched, err
 }
 
-func save(filename string, sch gtfs.Schedule) error {
-	log.Printf("Saving schedule to '%v'", filename)
-	file, err := os.Create(filename)
-	if err == nil {
-		encoder := msgpack.NewEncoder(file)
-		encoder.Encode(sch)
+func sampleNodes(lines []*gtfs.Line) []gtfs.LatLon {
+	s := []gtfs.LatLon{}
+	for _, l := range lines {
+		mid := l.StopTimes[len(l.StopTimes)/2]
+		s = append(s, l.Stops[mid.StopID].Pos)
 	}
-	file.Close()
-	log.Printf("Done")
-
-	return err
+	return s
 }
 
-func load(filename string) (gtfs.Schedule, error) {
-	log.Printf("Loading schedule from '%v'", filename)
-	file, err := os.Open(filename)
-	sch := gtfs.Schedule{}
-	if err == nil {
-		decoder := msgpack.NewDecoder(file)
-		err = decoder.Decode(&sch)
-	}
-	file.Close()
-	log.Printf("Done")
+func startServer(sch gtfs.Schedule) {
+	handlers := map[string]func(w http.ResponseWriter, r *http.Request){
+		"/": func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("GET %v", r.URL)
 
-	return sch, err
+			ts, ok := r.URL.Query()["t"]
+			t := ts[0]
+
+			if !ok || t == "" {
+				http.Error(w, "No t provided", http.StatusInternalServerError)
+				return
+			}
+
+			secs := util.HHMMSSToSecs(t)
+			lines := sch.ActiveLines(secs, "01")
+			nodes := sampleNodes(lines)
+			js, err := json.Marshal(nodes)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+		},
+	}
+
+	for route, handler := range handlers {
+		http.HandleFunc(route, handler)
+	}
+
+	port := ":9090"
+	log.Printf("Listening at http://localhost%v", port)
+	err := http.ListenAndServe(port, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
 func main() {
@@ -92,6 +113,10 @@ func main() {
 		panic(err)
 	}
 
+	startServer(sch)
+}
+
+func test(sch gtfs.Schedule) {
 	t := "18:27:00"
 	log.Printf("Querying active lines at %v...", t)
 	secs := util.HHMMSSToSecs(t)

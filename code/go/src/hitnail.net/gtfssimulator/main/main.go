@@ -18,23 +18,23 @@ func readGTFS(dir string) (gtfs.Schedule, error) {
 
 	var err error
 
-	routes, err := gtfs.ReadCSV(path.Join(dir, "routes.txt"), gtfs.ReadRoute)
+	routes, err := gtfs.MapFromCSV(path.Join(dir, "routes.txt"), gtfs.ReadRoute)
 	if err != nil {
 		return sch, err
 	}
-	trips, err := gtfs.ReadCSV(path.Join(dir, "trips.txt"), gtfs.ReadTrip)
+	trips, err := gtfs.ListFromCSV(path.Join(dir, "trips.txt"), gtfs.ReadTrip)
 	if err != nil {
 		return sch, err
 	}
-	stops, err := gtfs.ReadCSV(path.Join(dir, "stops.txt"), gtfs.ReadStop)
+	stops, err := gtfs.MapFromCSV(path.Join(dir, "stops.txt"), gtfs.ReadStop)
 	if err != nil {
 		return sch, err
 	}
-	stopTimes, err := gtfs.ReadCSV(path.Join(dir, "stop_times.txt"), gtfs.ReadStopTime)
+	stopTimes, err := gtfs.ListMapFromCSV(path.Join(dir, "stop_times.txt"), gtfs.ReadStopTime)
 	if err != nil {
 		return sch, err
 	}
-	services, err := gtfs.ReadCSV(path.Join(dir, "calendar.txt"), gtfs.ReadService)
+	services, err := gtfs.MapFromCSV(path.Join(dir, "calendar.txt"), gtfs.ReadService)
 	if err != nil {
 		return sch, err
 	}
@@ -58,5 +58,9 @@ func main() {
 		panic(err)
 	}
 
-	log.Println(sch.Sample())
+	line := sch.RandomLine()
+	fmt.Println(line.Trip)
+	fmt.Println(line.Route)
+	fmt.Println(line.Stops)
+	fmt.Println(line.StopTimes)
 }

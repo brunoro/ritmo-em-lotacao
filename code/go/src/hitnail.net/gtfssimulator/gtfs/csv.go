@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"hitnail.net/gtfssimulator/util"
 )
 
 type RowHandler func([]string) (HasKey, error)
@@ -162,14 +164,6 @@ func ReadTrip(r []string) (HasKey, error) {
 	}, nil
 }
 
-func parseTime(t string) int {
-	h := 0
-	m := 0
-	s := 0
-	fmt.Sscanf(t, "%d:%d:%d", &h, &m, &s)
-	return h*60*60 + m*60 + s
-}
-
 func ReadStopTime(r []string) (HasKey, error) {
 	rowLen := 6
 	if len(r) < rowLen {
@@ -180,8 +174,8 @@ func ReadStopTime(r []string) (HasKey, error) {
 		ID:            fmt.Sprintf("%v_%v", r[0], r[4]),
 		TripID:        r[0],
 		StopID:        r[3],
-		ArrivalTime:   parseTime(r[1]),
-		DepartureTime: parseTime(r[2]),
+		ArrivalTime:   util.HHMMSSToSecs(r[1]),
+		DepartureTime: util.HHMMSSToSecs(r[2]),
 	}, nil
 }
 

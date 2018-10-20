@@ -3,4 +3,4 @@ refs
 src/marey_graph.py
 src/bhtrans.sql*
 src/static/svgcheck*
-code/go/pkg/linux_amd64/hitnail.net/gtfssimulator/gtfs.a
+code/go/pkg/linux_amd64/hitnail.net/gtfssimulator/*.a

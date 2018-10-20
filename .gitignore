@@ -1,5 +1,4 @@
-transitfeed_rest
-gtfs
+./gtfs
 refs
 src/marey_graph.py
 src/bhtrans.sql*

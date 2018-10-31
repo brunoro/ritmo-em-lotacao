@@ -1,6 +1,14 @@
 gtfs/*
 refs
-src/marey_graph.py
-src/bhtrans.sql*
-src/static/svgcheck*
 code/go/pkg/linux_amd64/hitnail.net/gtfssimulator/*.a
+.idea
+node_modules
+src/**/*.js
+src/**/*.js.map
+typings
+dist
+coverage
+ts-out
+npm-debug.log
+debug.log
+

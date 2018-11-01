@@ -52,16 +52,17 @@ func stateHandler(sch gtfs.Schedule) func(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func indexHandler(staticPath string) func(w http.ResponseWriter, r *http.Request) {
+func staticHandler(staticPath string, filename string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join(staticPath, "index.html"))
+		http.ServeFile(w, r, path.Join(staticPath, filename))
 	}
 }
 
 func StartServer(staticPath string, sch gtfs.Schedule) {
-	http.Handle("/static", http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
+	http.HandleFunc("/", staticHandler(staticPath, "index.html"))
+	http.HandleFunc("/bundle.js", staticHandler(staticPath, "bundle.js"))
+	http.HandleFunc("/leaflet.css", staticHandler(staticPath, "leaflet.css"))
 	http.HandleFunc("/state", stateHandler(sch))
-	http.HandleFunc("/", indexHandler(staticPath))
 
 	port := 9090
 	log.Printf("Listening at http://localhost:%d", port)

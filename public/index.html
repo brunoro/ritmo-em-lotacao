@@ -1,9 +1,23 @@
 <html>
 <head>
-
+    <link rel="stylesheet" href="/leaflet.css"/>
+    <style type="text/css">
+        .hexbin-hexagon {
+            stroke: #000;
+            stroke-width: 1px;
+        }
+        .ping {
+            fill: steelblue;
+            stroke-width: 0;
+        }
+        #map {
+            height: 100%;
+            width: 100%; 
+        }
+    </style>
 </head>
 <body>
-    <h1>Test</h1>
-    <script src="/main.bundle.js"></script>
+    <div id="map"></div>
+    <script src="bundle.js"></script>
 </body>
 </html>

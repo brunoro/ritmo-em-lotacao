@@ -115,8 +115,9 @@ const tick = async () => {
     displayKV("dt", msToString(dt))
     displayKV("step", msToString(step))
 
-    const numNotes = Math.max(2, Math.ceil(count/500))
-    const offset = t.getTime() % 7
+    const numNoteMul = 2
+    const numNotes = Math.max(2, Math.ceil(count/dt*numNoteMul))
+    const offset = (t.getTime() / 333) % 13 // marreta
     const gain = sigmoid(count / 7000)
     playArp(numNotes, offset, gain)
     

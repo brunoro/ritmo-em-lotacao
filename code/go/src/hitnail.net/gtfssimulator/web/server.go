@@ -40,8 +40,7 @@ func stateHandler(sch gtfs.Schedule) func(w http.ResponseWriter, r *http.Request
 		}
 
 		secs := util.HHMMSSToSecs(t)
-		lines := sch.ActiveLines(secs, "01")
-		nodes := sampleNodes(lines)
+		nodes := sch.PositionsAt(secs, "01")
 		js, err := json.Marshal(nodes)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

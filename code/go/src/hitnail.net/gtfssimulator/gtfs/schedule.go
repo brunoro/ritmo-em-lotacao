@@ -3,6 +3,7 @@ package gtfs
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 )
 
@@ -107,7 +108,7 @@ func (x Schedule) RandomLine() Line {
 	return x.Lines[rand.Intn(len(x.Lines))]
 }
 
-func (x Schedule) ActiveLines(t int, serviceID string) []*Line {
+func (x Schedule) ActiveLinesAt(t int, serviceID string) []*Line {
 	activeLines := []*Line{}
 	for _, line := range x.Lines {
 		cp := line
@@ -120,4 +121,46 @@ func (x Schedule) ActiveLines(t int, serviceID string) []*Line {
 		}
 	}
 	return activeLines
+}
+
+func (x Schedule) PositionsAt(t int, serviceID string) []LatLon {
+	activeLines := x.ActiveLinesAt(t, serviceID)
+	pos := make([]LatLon, len(activeLines))
+	for i, line := range activeLines {
+		p, _ := line.PositionAt(t)
+		pos[i] = p
+	}
+	return pos
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func (l Line) PositionAt(t int) (LatLon, error) {
+	if l.DepartureTime > -1 && l.ArrivalTime > -1 {
+		if l.DepartureTime < t && l.ArrivalTime > t {
+			dur := float64(l.ArrivalTime - l.DepartureTime)
+			off := float64(t - l.DepartureTime)
+
+			ratio := off / dur
+			ind := ratio * float64(len(l.StopTimes))
+
+			lastI := len(l.StopTimes) - 1
+			prevI := min(int(math.Floor(ind)), lastI)
+			nextI := min(int(math.Ceil(ind)), lastI)
+
+			prevT := l.StopTimes[prevI]
+			nextT := l.StopTimes[nextI]
+
+			prev := l.Stops[prevT.StopID]
+			next := l.Stops[nextT.StopID]
+
+			return prev.Pos.intermediateTo(next.Pos, ratio)
+		}
+	}
+	return LatLon{}, fmt.Errorf("t='%v' doesn't belong in bounds=[%v, %v]", t, l.DepartureTime, l.ArrivalTime)
 }

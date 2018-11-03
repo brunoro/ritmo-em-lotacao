@@ -1,28 +1,11 @@
 package gtfs
 
-import (
-	"strconv"
-	"strings"
-)
-
 type HasKey interface {
 	Key() string
 }
 type Map map[string]HasKey
 type ListMap map[string][]HasKey
 type List []HasKey
-
-type LatLon [2]float32
-
-func parseFloat(s string) float32 {
-	s = strings.TrimSpace(s)
-	f, _ := strconv.ParseFloat(s, 32)
-	return float32(f)
-}
-
-func mkLatLon(lat string, lon string) LatLon {
-	return LatLon{parseFloat(lon), parseFloat(lat)}
-}
 
 type Route struct {
 	ID   string

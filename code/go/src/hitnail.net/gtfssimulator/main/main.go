@@ -35,7 +35,7 @@ func test(sch gtfs.Schedule) {
 	log.Printf("Querying active lines at %v...", t)
 	secs := util.HHMMSSToSecs(t)
 
-	lines := sch.ActiveLines(secs, "01")
+	lines := sch.ActiveLinesAt(secs, "01")
 
 	for _, line := range lines {
 		fmt.Println(line.Trip.ID,

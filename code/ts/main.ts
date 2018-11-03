@@ -64,15 +64,20 @@ const playArp = (size: number, shift: number, gain: number) => {
         const freq = Note.freq(note)
         const off = i * (2.5 / size)
         const vol = gain / size
-        console.log(`[${i+1}/${size}] #${scaleIndex}:${oct} ${note}=${freq} !${vol} ~> ${off}`)
+        //console.log(`[${i+1}/${size}] #${scaleIndex}:${oct} ${note}=${freq} !${vol} ~> ${off}`)
         playFreq(freq, vol, off)
     }
 }
 
-const center = [-19.926752, -43.939384]
+const initialCenter = [-19.926752, -43.939384]
+const minZoom = 12
+const maxZoom = 14
+const initialZoom = 12
+const opacity = 0.8
 const map = L.map('map', { 
-    center: new L.LatLng(center[0], center[1]),
-    zoom: 12,
+    center: new L.LatLng(initialCenter[0], initialCenter[1]),
+    zoom: initialZoom,
+    minZoom, maxZoom
 })
 
 /*
@@ -87,20 +92,28 @@ map.scrollWheelZoom.disable();
 //L.tileLayer.provider('CartoDB.VoyagerNoLabels').addTo(map)
 L.tileLayer.provider('Stamen.TonerBackground').addTo(map)
 const hexbin = L.hexbinLayer({
-    radius: 12,
     opacity: 0.8,
-    duration: 20,
+    duration: dt,
 }).addTo(map)
 
+const adjustZoom = () => {
+    const z = map.getZoom()
+    const zr = (z - minZoom) / (maxZoom - minZoom)
+    const xzr = 1.0 + zr * 4
+    hexbin.colorScaleExtent([1, 50 / xzr]) // TODO: use config call to update this
+    //hexbin.opacity(opacity * xzr) // TODO: use config call to update this
+}
+
+adjustZoom()
+map.on("zoomend", adjustZoom)
 
 hexbin
     .lat((d: FloatPair) => d[0])
     .lng((d: FloatPair) => d[1])
-    .colorRange(['white', 'blue'])
-    .colorScaleExtent([0, 100]) // TODO: use config call to update this
-    .duration(dt)
+    .colorRange(['rgba(0, 88, 252, 0.05)', 'rgba(0, 88, 252, 1)'])
 
 var t = new Date()
+t.setHours(10)
 
 const sigmoid = (t:number) => 1/(1+Math.pow(Math.E, -t))
 
@@ -119,7 +132,7 @@ const tick = async () => {
     const numNotes = Math.max(2, Math.ceil(count/dt*numNoteMul))
     const offset = (t.getTime() / 333) % 13 // marreta
     const gain = sigmoid(count / 7000)
-    playArp(numNotes, offset, gain)
+    //playArp(numNotes, offset, gain)
     
     t = new Date(t.getTime() + step)
 }

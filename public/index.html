@@ -2,20 +2,30 @@
 <head>
     <link rel="stylesheet" href="/leaflet.css"/>
     <style type="text/css">
-        .hexbin-hexagon {
-        }
-        .ping {
-            fill: steelblue;
-            stroke-width: 0;
-        }
         #map {
             height: 100%;
             width: 100%; 
+            z-index: 1;
+        }
+        #controls {
+            position: absolute;
+            top: 30%;
+            left: 5%;
+            z-index: 2;
+            background-color: rgba(96, 168, 255, 1);
+            color: white;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
+    <div id="controls">
+        <p><span id="time"></span></p>
+        <p>count <span id="count"></span></p>
+        <p>step <span id="step"></span></p>
+        <p>dt <span id="dt"></span></p>
+    </div>
+
     <script src="bundle.js"></script>
 </body>
 </html>

@@ -21,7 +21,7 @@ const msToString = (ms: number): string => {
 }
 
 const dt = 1000
-const step = 30*60*1000
+const step = 5*60*1000
 
 const audioContext = new AudioContext()
 const playFreq = (freq: number, vol: number, off: number) => {
@@ -55,15 +55,17 @@ const playFreq = (freq: number, vol: number, off: number) => {
 
 const rotate = (x:any[], i:number): any[] => [...x.slice(i, x.length), ...x.slice(0, i)];
 
-const playArp = (size: number, shift: number) => {
+const playArp = (size: number, shift: number, gain: number) => {
     const scale = rotate(Scale.notes("D mixolydian"), shift)
     for (let i=0; i<size; i++) {
-        const oct = 4 + Math.floor(i/4)
+        const oct = 3 + Math.floor(i/4)
         const scaleIndex = (i * 3) % scale.length
         const note = Note.from({ oct }, scale[scaleIndex])
         const freq = Note.freq(note)
-        console.log(i, scaleIndex, note, oct, freq)
-        playFreq(freq, 0.6 / size, 0.25 * i)
+        const off = i * (2.5 / size)
+        const vol = gain / size
+        console.log(`[${i+1}/${size}] #${scaleIndex}:${oct} ${note}=${freq} !${vol} ~> ${off}`)
+        playFreq(freq, vol, off)
     }
 }
 
@@ -99,6 +101,9 @@ hexbin
     .duration(dt)
 
 var t = new Date()
+
+const sigmoid = (t:number) => 1/(1+Math.pow(Math.E, -t))
+
 const tick = async () => {
     const url = `http://localhost:9090/state?t=${timeString(t)}`
     const coll = await d3.json<FloatPair[]>(url)
@@ -110,10 +115,10 @@ const tick = async () => {
     displayKV("dt", msToString(dt))
     displayKV("step", msToString(step))
 
-    const baseFreq = 110
-    const numNotes = Math.ceil(count / 500)
-    playArp(numNotes, t.getTime() % 7)
-    //playFreq(Math.floor(adjCount / baseFreq) * baseFreq)
+    const numNotes = Math.max(2, Math.ceil(count/500))
+    const offset = t.getTime() % 7
+    const gain = sigmoid(count / 7000)
+    playArp(numNotes, offset, gain)
     
     t = new Date(t.getTime() + step)
 }

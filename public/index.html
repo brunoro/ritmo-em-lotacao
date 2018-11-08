@@ -7,13 +7,22 @@
             width: 100%; 
             z-index: 1;
         }
+        #time {
+            font-size: 20pt;
+        }
         #controls {
             position: absolute;
             top: 30%;
             left: 5%;
             z-index: 2;
-            background-color: rgba(96, 168, 255, 1);
-            color: white
+            background-color: #4a7365;
+            border-color: #454545;
+            border-style: solid;
+            border-width: 5px;
+            color: white;
+            font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 5px;
+            min-width: 120px;
         }
     </style>
 </head>
@@ -21,9 +30,7 @@
     <div id="map"></div>
     <div id="controls">
         <p><span id="time"></span></p>
-        <p>count <span id="count"></span></p>
-        <p>step <span id="step"></span></p>
-        <p>dt <span id="dt"></span></p>
+        <p><span id="count"></span> veículos</p>
     </div>
 
     <script src="bundle.js"></script>

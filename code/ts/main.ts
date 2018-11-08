@@ -126,16 +126,14 @@ const tick = async () => {
     const count = coll.length
 
     hexbin.data(coll)
-    displayKV("time", t.toLocaleTimeString())
+    displayKV("time", t.toTimeString().substr(0,8))
     displayKV("count", count.toString())
-    displayKV("dt", msToString(dt))
-    displayKV("step", msToString(step))
 
     const numNoteMul = 2.8
     const numNotes = Math.ceil(count/dt*numNoteMul)
     const offset = (t.getTime()/1235) % 14 // marreta
     const gain = sigmoid(count / 7000)
-    playArp(numNotes, offset, gain)
+    //playArp(numNotes, offset, gain)
     
     t = new Date(t.getTime() + step)
 }

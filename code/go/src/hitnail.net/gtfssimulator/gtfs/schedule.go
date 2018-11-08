@@ -114,7 +114,12 @@ func (x Schedule) ActiveLinesAt(t int, serviceID string) []*Line {
 		cp := line
 		if line.Trip.ServiceID != serviceID {
 			if line.DepartureTime > -1 && line.ArrivalTime > -1 {
-				if line.DepartureTime < t && line.ArrivalTime > t {
+				dep := line.DepartureTime
+				arr := line.ArrivalTime
+				if dep > arr {
+					arr += 86400 // seconds in day
+				}
+				if dep < t && t < arr {
 					activeLines = append(activeLines, &cp)
 				}
 			}
@@ -141,10 +146,15 @@ func min(a int, b int) int {
 }
 
 func (l Line) PositionAt(t int) (LatLon, error) {
-	if l.DepartureTime > -1 && l.ArrivalTime > -1 {
-		if l.DepartureTime < t && l.ArrivalTime > t {
-			dur := float64(l.ArrivalTime - l.DepartureTime)
-			off := float64(t - l.DepartureTime)
+	dep := l.DepartureTime
+	arr := l.ArrivalTime
+	if dep > -1 && arr > -1 {
+		if dep > arr {
+			arr += 86400 // seconds in day
+		}
+		if dep < t && t < arr {
+			dur := float64(arr - dep)
+			off := float64(t - dep)
 
 			ratio := off / dur
 			ind := ratio * float64(len(l.StopTimes))

@@ -23,7 +23,18 @@ const msToString = (ms: number): string => {
 }
 
 const dt = 1000
-const step = 5*60*1000
+let step = 1000
+
+const timescaleSpan = document.getElementById("timescale-span")
+const timescaleSlider = document.getElementById("timescale")
+const updateStep = () => {
+    const val = parseInt(timescaleSlider.value)
+    const scale = val*val
+    timescaleSpan.innerText = scale.toString()
+    step = scale * 1000
+}
+updateStep()
+timescaleSlider.oninput = updateStep
 
 const audioContext = new AudioContext()
 const playFreq = (freq: number, vol: number, off: number) => {
@@ -114,7 +125,7 @@ map.on("zoomend", adjustZoom)
 hexbin
     .lat((d: FloatPair) => d[0])
     .lng((d: FloatPair) => d[1])
-    .colorRange(['rgba(0, 159, 104, 0.08)', 'rgba(0, 159, 104, 1)'])
+    .colorRange(['rgba(0, 159, 104, 0.1)', 'rgba(0, 159, 104, 1)'])
 
 var t = new Date()
 

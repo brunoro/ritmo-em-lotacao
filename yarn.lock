@@ -6,6 +6,10 @@
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/@asymmetrik/leaflet-d3/-/leaflet-d3-4.2.0.tgz#155a4e11f622550b508d69a9c0af2022ddec295f"
 
+"@mohayonao/wave-tables@0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@mohayonao/wave-tables/-/wave-tables-0.2.0.tgz#33240bece703836a8708a46799f51d393736faa6"
+
 "@types/d3-array@*":
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/@types/d3-array/-/d3-array-1.2.4.tgz#7088445c8717ba1fba416a1df7bbd11cc72a3763"
@@ -5444,6 +5448,12 @@ wbuf@^1.1.0, wbuf@^1.7.2:
   resolved "https://registry.yarnpkg.com/wbuf/-/wbuf-1.7.3.tgz#c1d8d149316d3ea852848895cb6a0bfe887b87df"
   dependencies:
     minimalistic-assert "^1.0.0"
+
+web-audio-oscillators@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/web-audio-oscillators/-/web-audio-oscillators-1.0.4.tgz#592a063a36c83f5d86cb192ddc82516eca6f2b63"
+  dependencies:
+    "@mohayonao/wave-tables" "0.2.0"
 
 webpack-cli@3.0.8:
   version "3.0.8"

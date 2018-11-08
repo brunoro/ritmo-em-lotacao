@@ -3,11 +3,13 @@ import * as L from 'leaflet'
 import 'd3-hexbin'
 import '@asymmetrik/leaflet-d3'
 import 'leaflet-providers'
-
 //@ts-ignore
 import { Scale, Note } from 'tonal'
 //@ts-ignore
 import * as ADSREnvelope from 'adsr-envelope'
+//@ts-ignore
+import Oscillators from 'web-audio-oscillators'
+
 
 type FloatPair = [number, number]
 
@@ -25,23 +27,25 @@ const step = 5*60*1000
 
 const audioContext = new AudioContext()
 const playFreq = (freq: number, vol: number, off: number) => {
-    const osc = audioContext.createOscillator()
-    osc.type = 'sine'
+    const osc = Oscillators.sine(audioContext)
     osc.frequency.value = freq
 
     const gain = audioContext.createGain()
+    const filter = audioContext.createBiquadFilter();
+    filter.frequency.value = freq * 1.5;
 
     osc.connect(gain)
-    gain.connect(audioContext.destination)
+    gain.connect(filter)
+    filter.connect(audioContext.destination)
 
     const dur = dt/1000
-    const et = dur/5
+    const et = dur/7
     const env = new ADSREnvelope({
         peakLevel: vol,
         attackTime: et,
-        decayTime: et,
-        sustainTime: et*2,
-        releaseTime: et,
+        decayTime: et*2,
+        sustainTime: et,
+        releaseTime: et*3,
         duration: dur,
    })
  
@@ -56,7 +60,7 @@ const playFreq = (freq: number, vol: number, off: number) => {
 const rotate = (x:any[], i:number): any[] => [...x.slice(i, x.length), ...x.slice(0, i)];
 
 const playArp = (size: number, shift: number, gain: number) => {
-    const scale = rotate(Scale.notes("D mixolydian"), shift)
+    const scale = rotate(Scale.notes("D phrygian"), shift)
     for (let i=0; i<size; i++) {
         const oct = 3 + Math.floor(i/4)
         const scaleIndex = (i * 3) % scale.length
@@ -110,10 +114,9 @@ map.on("zoomend", adjustZoom)
 hexbin
     .lat((d: FloatPair) => d[0])
     .lng((d: FloatPair) => d[1])
-    .colorRange(['rgba(0, 88, 252, 0.05)', 'rgba(0, 88, 252, 1)'])
+    .colorRange(['rgba(0, 159, 104, 0.08)', 'rgba(0, 159, 104, 1)'])
 
 var t = new Date()
-t.setHours(10)
 
 const sigmoid = (t:number) => 1/(1+Math.pow(Math.E, -t))
 
@@ -128,11 +131,11 @@ const tick = async () => {
     displayKV("dt", msToString(dt))
     displayKV("step", msToString(step))
 
-    const numNoteMul = 2
-    const numNotes = Math.max(2, Math.ceil(count/dt*numNoteMul))
-    const offset = (t.getTime() / 333) % 13 // marreta
+    const numNoteMul = 2.8
+    const numNotes = Math.ceil(count/dt*numNoteMul)
+    const offset = (t.getTime()/1235) % 14 // marreta
     const gain = sigmoid(count / 7000)
-    //playArp(numNotes, offset, gain)
+    playArp(numNotes, offset, gain)
     
     t = new Date(t.getTime() + step)
 }

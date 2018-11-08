@@ -16,11 +16,6 @@ type FloatPair = [number, number]
 const tzOffset = 3*60*60*1000
 const displayKV = (k: string, v: string) => document.getElementById(k).innerText = v
 const timeString = (t:Date): string => new Date(t.getTime() - tzOffset).toISOString().substr(11,8)
-const msToString = (ms: number): string => { 
-    const t = new Date(null)
-    t.setSeconds(0, ms)
-    return timeString(t)
-}
 
 const dt = 1000
 let step = 1000
@@ -28,7 +23,7 @@ let step = 1000
 const timescaleSpan = document.getElementById("timescale-span")
 const timescaleSlider = document.getElementById("timescale")
 const updateStep = () => {
-    const val = parseInt(timescaleSlider.value)
+    const val = parseInt((timescaleSlider as HTMLInputElement).value)
     const scale = val*val
     timescaleSpan.innerText = scale.toString()
     step = scale * 1000
@@ -43,7 +38,7 @@ const playFreq = (freq: number, vol: number, off: number) => {
 
     const gain = audioContext.createGain()
     const filter = audioContext.createBiquadFilter();
-    filter.frequency.value = freq * 1.5;
+    filter.frequency.value = 5000;
 
     osc.connect(gain)
     gain.connect(filter)
@@ -70,11 +65,11 @@ const playFreq = (freq: number, vol: number, off: number) => {
 
 const rotate = (x:any[], i:number): any[] => [...x.slice(i, x.length), ...x.slice(0, i)];
 
-const playArp = (size: number, shift: number, gain: number) => {
+const playArp = (size: number, shift: number, gain: number, jump: number) => {
     const scale = rotate(Scale.notes("D phrygian"), shift)
     for (let i=0; i<size; i++) {
-        const oct = 3 + Math.floor(i/4)
-        const scaleIndex = (i * 3) % scale.length
+        const oct = 3 + Math.floor(i/(jump*2))
+        const scaleIndex = (i * jump) % scale.length
         const note = Note.from({ oct }, scale[scaleIndex])
         const freq = Note.freq(note)
         const off = i * (2.5 / size)
@@ -127,7 +122,8 @@ hexbin
     .lng((d: FloatPair) => d[1])
     .colorRange(['rgba(0, 159, 104, 0.1)', 'rgba(0, 159, 104, 1)'])
 
-var t = new Date()
+let t = new Date()
+document.getElementById("now").onclick = () => t = new Date()
 
 const sigmoid = (t:number) => 1/(1+Math.pow(Math.E, -t))
 
@@ -140,11 +136,12 @@ const tick = async () => {
     displayKV("time", t.toTimeString().substr(0,8))
     displayKV("count", count.toString())
 
-    const numNoteMul = 2.8
-    const numNotes = Math.ceil(count/dt*numNoteMul)
-    const offset = (t.getTime()/1235) % 14 // marreta
-    const gain = sigmoid(count / 7000)
-    //playArp(numNotes, offset, gain)
+    const arplen = Math.ceil(count/1000*2.4566)
+    const arpstep = [2,3][Math.round(t.getTime()/46345)%2]
+    const offset = (t.getTime()/123417) % 7
+    const gain = sigmoid(count / 8000)
+    console.log(`arplen=${arplen}; arpstep=${arpstep} offset=${offset} gain=${gain}`)
+    playArp(arplen, offset, gain, arpstep)
     
     t = new Date(t.getTime() + step)
 }

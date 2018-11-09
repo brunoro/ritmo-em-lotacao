@@ -29,10 +29,10 @@ const MinUint = 0
 const MaxInt = int(MaxUint >> 1)
 const MinInt = -MaxInt - 1
 
-func (x Schedule) StopTimesForTrip(tripID string) ([]*StopTime, int, int, bool) {
+func (x Schedule) StopTimesForTrip(tripID string) ([]StopTime, int, int, bool) {
 	tStart := MaxInt
 	tEnd := MinInt
-	sts := []*StopTime{}
+	sts := []StopTime{}
 	objs, ok := x.StopTimes[tripID]
 	if !ok {
 		return sts, tStart, tEnd, false
@@ -45,13 +45,13 @@ func (x Schedule) StopTimesForTrip(tripID string) ([]*StopTime, int, int, bool) 
 		if k.ArrivalTime != -1 && k.ArrivalTime > tEnd {
 			tEnd = k.ArrivalTime
 		}
-		sts = append(sts, &k)
+		sts = append(sts, k)
 	}
 	return sts, tStart, tEnd, true
 }
 
-func (x Schedule) StopsForStopTimes(stopTimes []*StopTime) (map[string]*Stop, bool) {
-	stops := map[string]*Stop{}
+func (x Schedule) StopsForStopTimes(stopTimes []StopTime) (map[string]Stop, bool) {
+	stops := map[string]Stop{}
 	for _, st := range stopTimes {
 		o, ok := x.Stops[st.StopID]
 		if !ok {
@@ -59,19 +59,19 @@ func (x Schedule) StopsForStopTimes(stopTimes []*StopTime) (map[string]*Stop, bo
 			return stops, false
 		}
 		k := o.(Stop)
-		stops[st.StopID] = &k
+		stops[st.StopID] = k
 	}
 	return stops, true
 }
 
 func (x Schedule) LineFromTrip(trip Trip) (Line, error) {
-	line := Line{Trip: &trip}
+	line := Line{Trip: trip}
 
 	route, ok := x.GetRoute(trip.RouteID)
 	if !ok {
 		return line, fmt.Errorf("Can't find route '%v'", trip.RouteID)
 	}
-	line.Route = &route
+	line.Route = route
 
 	stopTimes, departureTime, arrivalTime, ok := x.StopTimesForTrip(trip.ID)
 	if !ok {

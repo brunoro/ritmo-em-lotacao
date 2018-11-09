@@ -70,8 +70,6 @@ func (x Service) Key() string {
 type Line struct {
 	Trip          *Trip
 	Route         *Route
-	Stops         map[string]*Stop
-	StopTimes     []*StopTime
 	DepartureTime int
 	ArrivalTime   int
 	Pos           LatLon

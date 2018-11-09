@@ -29,13 +29,13 @@ const MinUint = 0
 const MaxInt = int(MaxUint >> 1)
 const MinInt = -MaxInt - 1
 
-func (x Schedule) StopTimesForTrip(tripID string) ([]*StopTime, int, int, bool) {
+func (x Schedule) TripBounds(tripID string) (int, int, bool) {
 	tStart := MaxInt
 	tEnd := MinInt
-	sts := []*StopTime{}
 	objs, ok := x.StopTimes[tripID]
+
 	if !ok {
-		return sts, tStart, tEnd, false
+		return tStart, tEnd, false
 	}
 	for _, o := range objs {
 		k := o.(StopTime)
@@ -45,23 +45,8 @@ func (x Schedule) StopTimesForTrip(tripID string) ([]*StopTime, int, int, bool) 
 		if k.ArrivalTime != -1 && k.ArrivalTime > tEnd {
 			tEnd = k.ArrivalTime
 		}
-		sts = append(sts, &k)
 	}
-	return sts, tStart, tEnd, true
-}
-
-func (x Schedule) StopsForStopTimes(stopTimes []*StopTime) (map[string]*Stop, bool) {
-	stops := map[string]*Stop{}
-	for _, st := range stopTimes {
-		o, ok := x.Stops[st.StopID]
-		if !ok {
-			log.Printf("StopTime '%v' has an unknown Stop '%v'", st.ID, st.StopID)
-			return stops, false
-		}
-		k := o.(Stop)
-		stops[st.StopID] = &k
-	}
-	return stops, true
+	return tStart, tEnd, true
 }
 
 func (x Schedule) LineFromTrip(trip Trip) (Line, error) {
@@ -73,16 +58,12 @@ func (x Schedule) LineFromTrip(trip Trip) (Line, error) {
 	}
 	line.Route = &route
 
-	stopTimes, departureTime, arrivalTime, ok := x.StopTimesForTrip(trip.ID)
+	departureTime, arrivalTime, ok := x.TripBounds(trip.ID)
 	if !ok {
 		log.Printf("Trip '%v' has no StopTimes", trip.ID)
 	}
-	line.StopTimes = stopTimes
 	line.DepartureTime = departureTime
 	line.ArrivalTime = arrivalTime
-
-	stops, _ := x.StopsForStopTimes(stopTimes)
-	line.Stops = stops
 
 	return line, nil
 }
@@ -96,10 +77,10 @@ func NewSchedule(routes Map, trips List, stops Map, stopTimes ListMap, services 
 		Services:  services,
 	}
 
-	sch.Lines = []Line{}
-	for _, trip := range sch.Trips {
+	sch.Lines = make([]Line, len(sch.Trips))
+	for i, trip := range sch.Trips {
 		line, _ := sch.LineFromTrip(trip.(Trip))
-		sch.Lines = append(sch.Lines, line)
+		sch.Lines[i] = line
 	}
 	return sch, nil
 }
@@ -108,10 +89,9 @@ func (x Schedule) RandomLine() Line {
 	return x.Lines[rand.Intn(len(x.Lines))]
 }
 
-func (x Schedule) ActiveLinesAt(t int, serviceID string) []*Line {
-	activeLines := []*Line{}
+func (x Schedule) ActiveLinesAt(t int, serviceID string) []Line {
+	activeLines := []Line{}
 	for _, line := range x.Lines {
-		cp := line
 		if line.Trip.ServiceID != serviceID {
 			if line.DepartureTime > -1 && line.ArrivalTime > -1 {
 				dep := line.DepartureTime
@@ -120,7 +100,7 @@ func (x Schedule) ActiveLinesAt(t int, serviceID string) []*Line {
 					arr += 86400 // seconds in day
 				}
 				if dep < t && t < arr {
-					activeLines = append(activeLines, &cp)
+					activeLines = append(activeLines, line)
 				}
 			}
 		}
@@ -129,11 +109,21 @@ func (x Schedule) ActiveLinesAt(t int, serviceID string) []*Line {
 }
 
 func (x Schedule) PositionsAt(t int, serviceID string) []LatLon {
-	activeLines := x.ActiveLinesAt(t, serviceID)
-	pos := make([]LatLon, len(activeLines))
-	for i, line := range activeLines {
-		p, _ := line.PositionAt(t)
-		pos[i] = p
+	pos := []LatLon{}
+	for _, line := range x.Lines {
+		if line.Trip.ServiceID != serviceID {
+			if line.DepartureTime > -1 && line.ArrivalTime > -1 {
+				dep := line.DepartureTime
+				arr := line.ArrivalTime
+				if dep > arr {
+					arr += 86400 // seconds in day
+				}
+				if dep < t && t < arr {
+					p, _ := x.LinePositionAt(t, line)
+					pos = append(pos, p)
+				}
+			}
+		}
 	}
 	return pos
 }
@@ -145,7 +135,11 @@ func min(a int, b int) int {
 	return b
 }
 
-func (l Line) PositionAt(t int) (LatLon, error) {
+func (x Schedule) GetStop(id string) Stop {
+	return x.Stops[id].(Stop)
+}
+
+func (x Schedule) LinePositionAt(t int, l Line) (LatLon, error) {
 	dep := l.DepartureTime
 	arr := l.ArrivalTime
 	if dep > -1 && arr > -1 {
@@ -157,17 +151,19 @@ func (l Line) PositionAt(t int) (LatLon, error) {
 			off := float64(t - dep)
 
 			ratio := off / dur
-			ind := ratio * float64(len(l.StopTimes))
 
-			lastI := len(l.StopTimes) - 1
+			stopTimes := x.StopTimes[l.Trip.ID]
+			ind := ratio * float64(len(stopTimes))
+
+			lastI := len(stopTimes) - 1
 			prevI := min(int(math.Floor(ind)), lastI)
 			nextI := min(int(math.Ceil(ind)), lastI)
 
-			prevT := l.StopTimes[prevI]
-			nextT := l.StopTimes[nextI]
+			prevT := stopTimes[prevI].(StopTime)
+			nextT := stopTimes[nextI].(StopTime)
 
-			prev := l.Stops[prevT.StopID]
-			next := l.Stops[nextT.StopID]
+			prev := x.GetStop(prevT.StopID)
+			next := x.GetStop(nextT.StopID)
 
 			return prev.Pos.intermediateTo(next.Pos, ratio)
 		}

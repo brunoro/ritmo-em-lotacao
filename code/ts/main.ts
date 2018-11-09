@@ -120,7 +120,7 @@ map.on("zoomend", adjustZoom)
 hexbin
     .lat((d: FloatPair) => d[0])
     .lng((d: FloatPair) => d[1])
-    .colorRange(['rgba(0, 159, 104, 0.1)', 'rgba(0, 159, 104, 1)'])
+    .colorRange(['rgba(0, 159, 104, 0.15)', 'rgba(0, 159, 104, 1)'])
 
 let t = new Date()
 document.getElementById("now").onclick = () => t = new Date()

@@ -9,6 +9,8 @@ import (
 
 	"hitnail.net/gtfssimulator/gtfs"
 	"hitnail.net/gtfssimulator/util"
+
+	_ "net/http/pprof"
 )
 
 func logRequest(handler http.Handler) http.Handler {
@@ -16,15 +18,6 @@ func logRequest(handler http.Handler) http.Handler {
 		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
-}
-
-func sampleNodes(lines []*gtfs.Line) []gtfs.LatLon {
-	s := []gtfs.LatLon{}
-	for _, l := range lines {
-		mid := l.StopTimes[len(l.StopTimes)/2]
-		s = append(s, l.Stops[mid.StopID].Pos)
-	}
-	return s
 }
 
 func stateHandler(sch gtfs.Schedule) func(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +35,7 @@ func stateHandler(sch gtfs.Schedule) func(w http.ResponseWriter, r *http.Request
 		secs := util.HHMMSSToSecs(t)
 		nodes := sch.PositionsAt(secs, "01")
 		js, err := json.Marshal(nodes)
+		nodes = nil
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -32,8 +32,6 @@ func stateHandler(sch gtfs.Schedule) func(w http.ResponseWriter, r *http.Request
 		log.Printf("GET %v", r.URL)
 
 		ts, ok := r.URL.Query()["t"]
-		r.Body.Close()
-
 		t := ts[0]
 
 		if !ok || t == "" {

@@ -5,36 +5,10 @@ import { hslToHex } from './color';
 import 'leaflet-providers'
 
 let map = null;
-let coords = [];
+let frames = [];
 let hexLayers = [];
-let highlightLayer = null;
-
-const highlightStyle = ({ properties: { i } }) => {
-    const min = 0.5;
-    const max = 0.8;
-    const h = min + (max-min) * Math.min(i/6, 1.0);
-    return {
-        stroke: false,
-        fill: true,
-        fillColor: hslToHex(h, 1, 0.4),
-        fillOpacity: 0.9,
-    }
-}
-
-const highlightHexIndexes = (indexes) => {
-    if (highlightLayer) {
-        highlightLayer.removeFrom(map);
-    }
-
-    const geojson = geojson2h3.h3SetToFeatureCollection(
-        indexes, id => ({ i: indexes.indexOf(id) })
-    )
-
-    highlightLayer = L.geoJSON(geojson, {
-        style: highlightStyle,
-    });
-    highlightLayer.addTo(map);
-}
+let hexBins = [];
+const vectorLayers = [];
 
 const coordsToHexBins = (hexResolution: number, coords: number[2][]) => {
     const hexs = coords.map(([lat, lng]) => h3.geoToH3(lat, lng, hexResolution));
@@ -58,9 +32,74 @@ const hexStyle = (feature: { properties: { count: number } }) => {
     }
 }
 
+const countAtFrame = (hexId, i) => {
+    let count = 0;
+    if (hexBins[i][hexId]) {
+        count = hexBins[i][hexId];
+    }
+    return count;
+}
+
+const countDiff = hexId => {
+    return countAtFrame(hexId, 1) - countAtFrame(hexId, 0)
+}
+
+const interpolateCoord = (a, b, p) => {
+    return [
+        a[0] + (b[0] - a[0]) * p,
+        a[1] + (b[1] - a[1]) * p,
+    ]
+}
+
+const avgCoord = (coords) => {
+    console.log('coords')
+    console.log(coords)
+    let latAcc = 0;
+    let lngAcc = 0;
+    coords.forEach(([lat, lng]) => {
+        latAcc += lat;
+        lngAcc += lng;
+    })
+    return [
+        latAcc/coords.length,
+        lngAcc/coords.length,
+    ]
+}
+
 const hexLayerOnClick = (e) => {
-    const neighbors = h3.kRing(e.target.feature.id, 1);
-    highlightHexIndexes(neighbors);
+    if (vectorLayers) {
+        vectorLayers.forEach(layer => layer.removeFrom(map))
+    }
+    const hexId = e.target.feature.id;
+    const neighbors = h3.kRing(hexId, 1);
+    neighbors.shift(0);
+
+    center = e.target.feature.properties.center;
+    diff = countDiff(hexId);
+
+    console.log('adjustedNeighbors');
+    const adjustedNeighbors = neighbors
+        .map(neighborHexId => {
+            const neighborDiff = countDiff(neighborHexId);
+            // only count one direction
+            if (diff == 0 || diff >= neighborDiff) {
+                return;
+            }
+            const p = (neighborDiff - diff) / diff;
+            console.log(diff, neighborDiff, p)
+            const neighborCenter = h3.h3ToGeo(neighborHexId);
+            return interpolateCoord(center, neighborCenter, p);
+        })
+        .filter(x => x);
+    if (adjustedNeighbors.length == 0) {
+        return
+    }
+    const line = L.polyline(
+        [center, avgCoord(adjustedNeighbors)],
+        {color: 'purple'}
+    )
+    line.addTo(map);
+    vectorLayers.push(line);
 }
 
 const setAbOpacity = () => {
@@ -75,18 +114,21 @@ const setAbOpacity = () => {
     }
 }
 
-const drawCoords = () => {
+const drawFrames = () => {
     const hexResolution = document.getElementById("hexResolution").valueAsNumber;
 
     hexLayers.map(layer => layer.removeFrom(map));
+    hexBins = []
 
-    hexLayers = coords.map(c => {
-        const hexBins = coordsToHexBins(hexResolution, c);
+    hexLayers = frames.map(coords => {
+        frameHexBins = coordsToHexBins(hexResolution, coords);
+        hexBins.push(frameHexBins);
 
         const geojson = geojson2h3.h3SetToFeatureCollection(
-            Object.keys(hexBins),
+            Object.keys(frameHexBins),
             hex => ({
-                count: hexBins[hex]
+                center: h3.h3ToGeo(hex),
+                count: frameHexBins[hex]
             })
         );
 
@@ -95,6 +137,7 @@ const drawCoords = () => {
             onEachFeature: (_feat, layer) => layer.on({ click: hexLayerOnClick }),
         });
         layer.addTo(map);
+
         return layer;
     });
     setAbOpacity()
@@ -105,7 +148,7 @@ const snapshotTimestamp = (filename) =>
     new Date(filename.split('.')[0].split('_')[1]);
 
 const readFiles = (input) => {
-    coords = [];
+    frames = [];
     [...input.files]
         .sort((a, b) => snapshotTimestamp(b.name) - snapshotTimestamp(a.name))
         .forEach(readSnapshotJSON);
@@ -115,9 +158,9 @@ const readSnapshotJSON = (file) => {
     const fileReader = new FileReader();
 
     fileReader.onload = ({ target: { result }}) => {
-        coords.push(JSON.parse(result));
+        frames.push(JSON.parse(result));
 
-        drawCoords();
+        drawFrames();
     };
     fileReader.onerror = () => {
         alert(fileReader.error);
@@ -139,7 +182,7 @@ const initMap = () => {
 }
 
 (window as any).readFiles = readFiles;
-(window as any).drawCoords = drawCoords;
+(window as any).drawFrames = drawFrames;
 (window as any).setAbOpacity = setAbOpacity;
 
 document.addEventListener("DOMContentLoaded", (event) => {

@@ -7,6 +7,34 @@ import 'leaflet-providers'
 let map = null;
 let coords = [];
 let hexLayers = [];
+let highlightLayer = null;
+
+const highlightStyle = ({ properties: { i } }) => {
+    const min = 0.5;
+    const max = 0.8;
+    const h = min + (max-min) * Math.min(i/6, 1.0);
+    return {
+        stroke: false,
+        fill: true,
+        fillColor: hslToHex(h, 1, 0.4),
+        fillOpacity: 0.9,
+    }
+}
+
+const highlightHexIndexes = (indexes) => {
+    if (highlightLayer) {
+        highlightLayer.removeFrom(map);
+    }
+
+    const geojson = geojson2h3.h3SetToFeatureCollection(
+        indexes, id => ({ i: indexes.indexOf(id) })
+    )
+
+    highlightLayer = L.geoJSON(geojson, {
+        style: highlightStyle,
+    });
+    highlightLayer.addTo(map);
+}
 
 const coordsToHexBins = (hexResolution: number, coords: number[2][]) => {
     const hexs = coords.map(([lat, lng]) => h3.geoToH3(lat, lng, hexResolution));
@@ -28,6 +56,11 @@ const hexStyle = (feature: { properties: { count: number } }) => {
         fill: true,
         fillColor: hslToHex(h, 1, 0.4),
     }
+}
+
+const hexLayerOnClick = (e) => {
+    const neighbors = h3.kRing(e.target.feature.id, 1);
+    highlightHexIndexes(neighbors);
 }
 
 const setAbOpacity = () => {
@@ -52,10 +85,15 @@ const drawCoords = () => {
 
         const geojson = geojson2h3.h3SetToFeatureCollection(
             Object.keys(hexBins),
-            hex => ({count: hexBins[hex]})
+            hex => ({
+                count: hexBins[hex]
+            })
         );
 
-        layer = L.geoJSON(geojson, { style: hexStyle });
+        layer = L.geoJSON(geojson, {
+            style: hexStyle,
+            onEachFeature: (_feat, layer) => layer.on({ click: hexLayerOnClick }),
+        });
         layer.addTo(map);
         return layer;
     });

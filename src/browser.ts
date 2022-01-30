@@ -6,7 +6,7 @@ import 'leaflet-providers'
 
 let map = null;
 let coords = [];
-let hexLayer = null;
+let hexLayers = [];
 
 const coordsToHexBins = (hexResolution: number, coords: number[2][]) => {
     const hexs = coords.map(([lat, lng]) => h3.geoToH3(lat, lng, hexResolution));
@@ -26,40 +26,60 @@ const hexStyle = (feature: { properties: { count: number } }) => {
     return {
         stroke: false,
         fill: true,
-        // fillColor: hslToHex(h, 1, 0.4),
         fillColor: hslToHex(h, 1, 0.4),
-        fillOpacity: 0.7,
+    }
+}
+
+const setAbOpacity = () => {
+    const max = 0.7;
+    const p = document.getElementById("abSelector").checked * max;
+
+    if (hexLayers.length > 0) {
+        hexLayers[0].setStyle({ fillOpacity: p });
+    }
+    if (hexLayers.length > 1) {
+        hexLayers[1].setStyle({ fillOpacity: max - p });
     }
 }
 
 const drawCoords = () => {
-    const hexResolution = document.getElementById("hexResolution").valueAsNumber
+    const hexResolution = document.getElementById("hexResolution").valueAsNumber;
 
-    const hexBins = coordsToHexBins(hexResolution, coords);
-    console.log(hexBins);
+    hexLayers.map(layer => layer.removeFrom(map));
 
-    const geojson = geojson2h3.h3SetToFeatureCollection(
-        Object.keys(hexBins),
-        hex => ({count: hexBins[hex]})
-    );
+    hexLayers = coords.map(c => {
+        const hexBins = coordsToHexBins(hexResolution, c);
 
-    if (hexLayer) {
-        hexLayer.removeFrom(map);
-    }
+        const geojson = geojson2h3.h3SetToFeatureCollection(
+            Object.keys(hexBins),
+            hex => ({count: hexBins[hex]})
+        );
 
-    hexLayer = L.geoJSON(geojson, { style: hexStyle });
-    hexLayer.addTo(map);
+        layer = L.geoJSON(geojson, { style: hexStyle });
+        layer.addTo(map);
+        return layer;
+    });
+    setAbOpacity()
 }
 
-const readSnapshotJSON = (input) => {
-    const file = input.files[0];
+// snapshot_2022-01-29T16:53:39.742Z.json
+const snapshotTimestamp = (filename) =>
+    new Date(filename.split('.')[0].split('_')[1]);
+
+const readFiles = (input) => {
+    coords = [];
+    [...input.files]
+        .sort((a, b) => snapshotTimestamp(b.name) - snapshotTimestamp(a.name))
+        .forEach(readSnapshotJSON);
+}
+
+const readSnapshotJSON = (file) => {
     const fileReader = new FileReader();
 
-    fileReader.onload = () => {
-        coords = JSON.parse(fileReader.result);
-        console.log(coords);
+    fileReader.onload = ({ target: { result }}) => {
+        coords.push(JSON.parse(result));
 
-        drawCoords()
+        drawCoords();
     };
     fileReader.onerror = () => {
         alert(fileReader.error);
@@ -80,8 +100,9 @@ const initMap = () => {
     L.tileLayer.provider('Stamen.TonerBackground').addTo(map);
 }
 
-(window as any).readSnapshotJSON = readSnapshotJSON;
+(window as any).readFiles = readFiles;
 (window as any).drawCoords = drawCoords;
+(window as any).setAbOpacity = setAbOpacity;
 
 document.addEventListener("DOMContentLoaded", (event) => {
     initMap()

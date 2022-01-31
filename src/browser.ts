@@ -8,7 +8,8 @@ let map = null;
 let frames = [];
 let hexLayers = [];
 let hexBins = [];
-const vectorLayers = [];
+let hexLabels = [];
+let vectorLayers = [];
 
 const coordsToHexBins = (hexResolution: number, coords: number[2][]) => {
     const hexs = coords.map(([lat, lng]) => h3.geoToH3(lat, lng, hexResolution));
@@ -33,6 +34,12 @@ const hexStyle = (feature: { properties: { count: number } }) => {
 }
 
 const countAtFrame = (hexId, i) => {
+    if (i >= hexBins.length) {
+        console.log(hexBins)
+        console.log(i)
+        throw 'countAtFrame: hexBin out of range';
+    }
+
     let count = 0;
     if (hexBins[i][hexId]) {
         count = hexBins[i][hexId];
@@ -52,8 +59,6 @@ const interpolateCoord = (a, b, p) => {
 }
 
 const avgCoord = (coords) => {
-    console.log('coords')
-    console.log(coords)
     let latAcc = 0;
     let lngAcc = 0;
     coords.forEach(([lat, lng]) => {
@@ -70,6 +75,8 @@ const hexLayerOnClick = (e) => {
     if (vectorLayers) {
         vectorLayers.forEach(layer => layer.removeFrom(map))
     }
+    vectorLayers = [];
+
     const hexId = e.target.feature.id;
     const neighbors = h3.kRing(hexId, 1);
     neighbors.shift(0);
@@ -77,26 +84,35 @@ const hexLayerOnClick = (e) => {
     center = e.target.feature.properties.center;
     diff = countDiff(hexId);
 
-    console.log('adjustedNeighbors');
+    // TODO: some vectors are negative
     const adjustedNeighbors = neighbors
         .map(neighborHexId => {
             const neighborDiff = countDiff(neighborHexId);
-            // only count one direction
+            // only count outbound vectors
             if (diff == 0 || diff >= neighborDiff) {
                 return;
             }
             const p = (neighborDiff - diff) / diff;
-            console.log(diff, neighborDiff, p)
             const neighborCenter = h3.h3ToGeo(neighborHexId);
-            return interpolateCoord(center, neighborCenter, p);
+            const adjusted = interpolateCoord(center, neighborCenter, p);
+
+            const line = L.polyline(
+                [center, adjusted],
+                {color: 'purple'}
+            )
+            line.addTo(map);
+            vectorLayers.push(line);
+
+            return adjusted
         })
         .filter(x => x);
+
     if (adjustedNeighbors.length == 0) {
         return
     }
     const line = L.polyline(
         [center, avgCoord(adjustedNeighbors)],
-        {color: 'purple'}
+        {color: 'red'}
     )
     line.addTo(map);
     vectorLayers.push(line);
@@ -140,7 +156,43 @@ const drawFrames = () => {
 
         return layer;
     });
-    setAbOpacity()
+
+    drawCountDiffs();
+    setAbOpacity();
+}
+
+const allHexIds = () => {
+    const all = new Set();
+    hexBins.forEach((hexBin) => Object.keys(hexBin).forEach(hexId => all.add(hexId)))
+    return all;
+}
+
+const drawCountDiffs = () => {
+    if (frames.length < 2) {
+        console.log('drawCountDiffs needs at least 2 frames');
+        console.log(frames)
+        return
+    }
+
+    if (hexLabels) {
+        hexLabels.forEach(layer => layer.removeFrom(map))
+    }
+    hexLabels = [];
+
+
+    allHexIds().forEach(hexId => {
+        const coord = h3.h3ToGeo(hexId);
+        const diff = countDiff(hexId);
+
+        const label = L.marker(coord, {
+            icon: L.divIcon({
+                className: 'hex-label',
+                html: `${diff}`
+            }),
+        });
+        label.addTo(map);
+        hexLabels.push(label);
+    })
 }
 
 // snapshot_2022-01-29T16:53:39.742Z.json
@@ -150,7 +202,7 @@ const snapshotTimestamp = (filename) =>
 const readFiles = (input) => {
     frames = [];
     [...input.files]
-        .sort((a, b) => snapshotTimestamp(b.name) - snapshotTimestamp(a.name))
+        .sort((a, b) => snapshotTimestamp(a.name) - snapshotTimestamp(b.name))
         .forEach(readSnapshotJSON);
 }
 

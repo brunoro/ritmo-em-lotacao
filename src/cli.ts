@@ -1,27 +1,34 @@
 #!/usr/bin/env node
-import { getSnapshot, parseSnapshot } from './bhtrans'
+import { getSnapshot, parseSnapshot } from './bhtrans';
+import { sleep } from './sleep';
 import fs from 'fs';
 
-const sleep = (delayMs: number): Promise<void> =>
-    new Promise(resolve => setTimeout(resolve, delayMs));
-
-const writeSnapshotJSON = (data: object) => {
-    const filename = `snapshot_${new Date().toISOString()}.json`;
-    const json = JSON.stringify(data)
-    fs.writeFileSync(filename, json);
-}
-
 const main = async () => {
-    let rawData = await getSnapshot();
-    let data = parseSnapshot(rawData);
-    writeSnapshotJSON(data)
+  const snapshots = [];
+  const numSnapshots = 60;
+  const waitSeconds = 90;
+  const backoffSeconds = 60;
 
-    console.log('waiting 30s...')
-    await sleep(30000)
+  for (let i = 0; i < numSnapshots; i++) {
+    console.log(`${i + 1}/${numSnapshots}`);
+    try {
+      const rawData = await getSnapshot();
+      const data = parseSnapshot(rawData);
+      snapshots.push(data);
+      console.log(`waiting ${waitSeconds} seconds...`);
+      await sleep(waitSeconds * 1000);
+    } catch (e) {
+      console.log(`error, backing off ${backoffSeconds} seconds...`);
+      await sleep(backoffSeconds * 1000);
+      i--;
+    }
+  }
 
-    rawData = await getSnapshot();
-    data = parseSnapshot(rawData);
-    writeSnapshotJSON(data)
-}
+  const json = JSON.stringify(snapshots);
+  const filename = 'snapshots.json';
+  console.log(`writing snapshots to ${filename}`);
 
-main()
+  fs.writeFileSync(filename, json);
+};
+
+main();

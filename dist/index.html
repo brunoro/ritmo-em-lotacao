@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="./leaflet.css"/>
+    <style type="text/css">
+      #map { height: 420px; }
+      .hex-label {
+          font-size: 1.25em;
+          font-weight: 700;
+          color: #449;
+      }
+    </style>
+    <script src="./esbuild/browser.js"></script>
+    <title>Ritmo em Lotação</title>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <div id="controls">
+      <label for="frameSelector" >Frame</label>
+      <input
+        type="range"
+        id="frameSelector"
+        value="1" min="1" max="1"
+        onchange="draw()"
+        />
+
+      <br>
+
+      <button id="playButton" onclick="play()">play</button>
+
+      <br>
+
+      <label for="hexResolution" >Hex resolution</label>
+      <input
+        type="number"
+        id="hexResolution"
+        value="8" min="7" max="10"
+        onchange="draw()"
+        />
+
+      <br>
+
+      <label for="showDiffLabel">Show diff label</label>
+      <input
+        type="checkbox"
+        name="showDiffLabel"
+        id="showDiffLabel"
+        value="0"
+        onchange="toggleDiffLabel(this)"
+        checked
+        />
+
+      <br>
+
+      <label for="showDiffVector">Show diff vectors</label>
+      <input
+        type="checkbox"
+        name="showDiffVector"
+        id="showDiffVector"
+        value="0"
+        onchange="toggleDiffVector(this)"
+        checked
+        />
+
+    </div>
+  </body>
+</html>

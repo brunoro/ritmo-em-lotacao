@@ -1,54 +1,69 @@
 import * as L from 'leaflet';
 import 'leaflet-providers';
 
-import { drawHexBins, drawDiffs } from 'src/graphics';
+import {
+  HexBinLayer,
+  LabelLayer,
+  VectorLayer,
+  drawHexBins,
+  drawDiffs,
+} from 'src/graphics';
 import { hexBins, allFrameHexIDs } from 'src/hexBins';
 import { sleep } from 'src/sleep';
 import frames from 'src/snapshots.json';
 
-let map = null;
+let map: L.Map | null = null;
 
 // layers
-const hexLayers: HexLayer = L.featureGroup();
-const diffLabels: DiffLabelLayer = L.featureGroup();
-const diffVectors: DiffVectorLayer = L.featureGroup();
+const hexLayers: L.FeatureGroup<HexBinLayer> = L.featureGroup();
+const diffLabels: L.FeatureGroup<LabelLayer> = L.featureGroup();
+const diffVectors: L.FeatureGroup<VectorLayer> = L.featureGroup();
 
 const toggleDiffVector = () => {
-  document.getElementById('showDiffVector').checked
+  document.getElementById('showDiffVector')?.checked
     ? diffVectors.addTo(map)
     : diffVectors.removeFrom(map);
 };
 
 const toggleDiffLabel = () => {
-  document.getElementById('showDiffLabel').checked
+  document.getElementById('showDiffLabel')?.checked
     ? diffLabels.addTo(map)
     : diffLabels.removeFrom(map);
 };
 
 const draw = () => {
-  const t = document.getElementById('frameSelector').valueAsNumber;
-
-  // frames start at 1, as we need the previous frame to calculate the diff
-  if (t < 1 || t > frames.length) {
-    console.log(`can't draw frame ${t}, got `);
+  let t = document.getElementById('frameSelector')?.valueAsNumber;
+  if (!t) {
+    console.error('missing element #frameSelector');
     return;
   }
 
-  const resolution = document.getElementById('hexResolution').valueAsNumber;
+  // frames start at 1, as we need the previous frame to calculate the diff
+  if (t < 1 || t > frames.length) {
+    console.error(`can't draw frame ${t}, got ${frames.length} frames`);
+    return;
+  }
+
+  let resolution = document.getElementById('hexResolution')?.valueAsNumber;
+  if (!resolution) {
+    console.error('missing element #hexResolution');
+    return;
+  }
   const bins = [
     hexBins(frames[t - 1], resolution),
     hexBins(frames[t], resolution),
   ];
+
   hexLayers.clearLayers();
-  bins.map((bin) => hexLayers.addLayer(drawHexBins(bin)));
+  hexLayers.addLayer(drawHexBins(bins[1]));
 
   const ids = allFrameHexIDs(bins);
   const { labels, vectors } = drawDiffs(bins, ids);
 
   diffLabels.clearLayers();
-  labels.map((layer) => diffLabels.addLayer(layer));
+  labels.map((layer: LabelLayer) => diffLabels.addLayer(layer));
   diffVectors.clearLayers();
-  vectors.map((layer) => diffVectors.addLayer(layer));
+  vectors.map((layer: VectorLayer) => diffVectors.addLayer(layer));
 };
 
 const initMap = () => {
@@ -77,13 +92,19 @@ const initMap = () => {
 
 const setFrameSelectorRange = () => {
   const input = document.getElementById('frameSelector');
-  input.setAttribute('max', frames.length - 1);
-  input.setAttribute('min', 1);
-  input.setAttribute('value', 1);
+  if (!input) {
+    return;
+  }
+  input.setAttribute('max', `${frames.length - 1}`);
+  input.setAttribute('min', '1');
+  input.setAttribute('value', '1');
 };
 
 const play = async () => {
   const input = document.getElementById('frameSelector');
+  if (!input) {
+    return;
+  }
   for (let i = 1; i < frames.length; i++) {
     input.setAttribute('value', i);
     draw();

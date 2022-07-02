@@ -5,30 +5,31 @@ import * as R from 'ramda';
 import { LatLng, interpolateCoord, avgCoord } from 'src/geo';
 import { HexID } from 'src/hexBins';
 
-type DiffVectorLayer = L.Polyline[];
+export type VectorLayer = L.Polyline;
 
-type HexCountMap = { [id: HexID]: number };
-type HexCoordMap = { [id: HexID]: LatLng };
-
-const drawVector = (
-  counts: HexCountMap,
-  coords: HexCoordMap,
+export const drawVector = (
+  counts: { [id: HexID]: number },
+  coords: { [id: HexID]: LatLng },
   id: HexID
-): L.Polyline | undefined => {
+): VectorLayer | null => {
   const center = coords[id];
   const count = counts[id];
+
+  // only count outbound vectors
+  if (!count || count == 0) {
+    return null;
+  }
 
   const neighbors = h3.kRing(id, 1);
   neighbors.shift();
 
-  // TODO: some vectors are negative
   // TODO: precompute neighbors
   const adjustedNeighbors = neighbors
     .map((nID: HexID) => {
       const nCount = counts[nID];
       // only count outbound vectors
-      if (count == 0 || count >= nCount) {
-        return;
+      if (!nCount || nCount == 0 || count >= nCount) {
+        return null;
       }
       const p = (nCount - count) / Math.max(nCount, count);
       const nCenter = coords[nID];
@@ -37,11 +38,9 @@ const drawVector = (
     .filter(R.identity) as LatLng[];
 
   if (adjustedNeighbors.length == 0) {
-    return;
+    return null;
   }
   return L.polyline([center, avgCoord(adjustedNeighbors)], {
     color: 'purple',
   });
 };
-
-export { drawVector, DiffVectorLayer };

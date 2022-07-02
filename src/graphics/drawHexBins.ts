@@ -1,14 +1,15 @@
 import * as h3 from 'h3-js';
-import geojson2h3 from 'geojson2h3';
 import * as L from 'leaflet';
+import geojson2h3 from 'geojson2h3';
 
 import { hslToHex } from 'src/color';
 import { HexBins } from 'src/hexBins';
 
-type HexLayer = L.GeoJSON;
+export type HexBinLayer = L.GeoJSON;
+type CountFeature = { count: number };
 
-const hexStyle = (feature: { properties: { count: number } }) => {
-  const count = feature.properties.count;
+const style: L.StyleFunction<CountFeature> = (feature?) => {
+  const count = feature?.properties.count || 0;
   const max = 15;
   const h = 0.2 - 0.2 * Math.min(count / max, 1.0); // 0.2 (green) -> 0 (red)
   return {
@@ -18,19 +19,17 @@ const hexStyle = (feature: { properties: { count: number } }) => {
   };
 };
 
-const drawHexBins = (bins: HexBins): HexLayer => {
+export const drawHexBins = (bins: HexBins): HexBinLayer => {
   const geojson = geojson2h3.h3SetToFeatureCollection(
-    Object.keys(frames),
+    Object.keys(bins),
     (id) => ({
-      center: h3.h3ToGeo(id),
+      center: h3.h3ToGeo(id), // TODO: cache coords
       count: bins[id],
     })
   );
 
   return L.geoJSON(geojson, {
-    style: hexStyle,
+    style,
     // onEachFeature: (_feat, layer) => layer.on({ click: hexLayerOnClick }),
   });
 };
-
-export { drawHexBins };

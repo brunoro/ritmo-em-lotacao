@@ -29,8 +29,8 @@ const countDiff = (frames: HexBins[], hexId: HexID): number => {
 };
 
 // TODO: rename this
-const allFrameHexIDs = (frames: HexBins[]) => {
-  const all = new Set();
+const allFrameHexIDs = (frames: HexBins[]): string[] => {
+  const all = new Set<string>();
   frames.forEach((frame) =>
     Object.keys(frame).forEach((hexId) => all.add(hexId))
   );

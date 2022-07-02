@@ -2,18 +2,20 @@ import * as h3 from 'h3-js';
 import * as L from 'leaflet';
 import * as R from 'ramda';
 
-import { LatLng, latLng, interpolateCoord, avgCoord } from 'src/geo';
+import { LatLng, interpolateCoord, avgCoord } from 'src/geo';
 import { HexID } from 'src/hexBins';
 
 type DiffVectorLayer = L.Polyline[];
 
 type HexCountMap = { [id: HexID]: number };
+type HexCoordMap = { [id: HexID]: LatLng };
 
 const drawVector = (
   counts: HexCountMap,
-  id: HexID,
-  center: LatLng
+  coords: HexCoordMap,
+  id: HexID
 ): L.Polyline | undefined => {
+  const center = coords[id];
   const count = counts[id];
 
   const neighbors = h3.kRing(id, 1);
@@ -28,17 +30,16 @@ const drawVector = (
       if (count == 0 || count >= nCount) {
         return;
       }
-      const p = (nCount - count) / count;
-      const neighborCenter = latLng(h3.h3ToGeo(nID));
-      return interpolateCoord(center, neighborCenter, p);
+      const p = (nCount - count) / Math.max(nCount, count);
+      const nCenter = coords[nID];
+      return interpolateCoord(center, nCenter, p);
     })
     .filter(R.identity) as LatLng[];
 
-  const coords: LatLng[] = [center, avgCoord(adjustedNeighbors)];
   if (adjustedNeighbors.length == 0) {
     return;
   }
-  return L.polyline(coords, {
+  return L.polyline([center, avgCoord(adjustedNeighbors)], {
     color: 'purple',
   });
 };

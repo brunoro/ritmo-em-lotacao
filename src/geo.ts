@@ -6,8 +6,8 @@ type LatLngMap<T> = { [k: T]: LatLng };
 
 const latLng = ([lat, lng]: number[]) => L.latLng(lat, lng);
 
-const interpolateCoord = (a: LatLng, b: LatLng, p): LatLng => {
-  return [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p];
+const interpolateCoord = (a: LatLng, b: LatLng, p: number): LatLng => {
+  return [a.lat + (b.lat - a.lat) * p, a.lng + (b.lng - a.lng) * p];
 };
 
 const avgCoord = (coords: LatLng[]): LatLng => {

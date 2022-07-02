@@ -31,9 +31,9 @@ export const drawDiffs = (frames: HexBins[], ids: HexID[]) => {
   );
   const labels = ids.map((id) => drawLabel(coords[id], diffs[id].toString()));
 
-  const drawDiffVector = R.curry(drawVector)(diffs);
+  const drawDiffVector = R.curry(drawVector)(diffs)(coords);
   const vectors = ids
-    .map((id) => drawDiffVector(id, coords[id]))
+    .map((id) => drawDiffVector(id))
     .filter(R.identity) as L.Polyline[];
 
   return { labels, vectors };

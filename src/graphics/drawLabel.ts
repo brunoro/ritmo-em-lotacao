@@ -1,7 +1,7 @@
-import { LatLng } from 'src/geo';
+import { LatLng } from '../geo';
 import * as L from 'leaflet';
 
-export type LabelLayer = L.Marker[];
+export type LabelLayer = L.Marker;
 
 export const drawLabel = (coord: LatLng, text: string): LabelLayer =>
   L.marker(coord, {

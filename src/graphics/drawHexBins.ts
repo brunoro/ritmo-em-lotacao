@@ -1,9 +1,9 @@
-import * as h3 from 'h3-js';
-import * as L from 'leaflet';
-import geojson2h3 from 'geojson2h3';
+import * as h3 from "h3-js";
+import * as L from "leaflet";
+import geojson2h3 from "geojson2h3";
 
-import { hslToHex } from 'src/color';
-import { HexBins } from 'src/hexBins';
+import { hslToHex } from "../color";
+import { HexBins } from "../hexBins";
 
 export type HexBinLayer = L.GeoJSON;
 type CountFeature = { count: number };

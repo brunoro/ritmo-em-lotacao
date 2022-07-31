@@ -1,9 +1,9 @@
-import * as h3 from 'h3-js';
-import * as L from 'leaflet';
-import * as R from 'ramda';
+import * as h3 from "h3-js";
+import * as L from "leaflet";
+import * as R from "ramda";
 
-import { LatLng, interpolateCoord, avgCoord } from 'src/geo';
-import { HexID } from 'src/hexBins';
+import { LatLng, interpolateCoord, avgCoord } from "../geo";
+import { HexID } from "../hexBins";
 
 export type VectorLayer = L.Polyline;
 
@@ -41,6 +41,6 @@ export const drawVector = (
     return null;
   }
   return L.polyline([center, avgCoord(adjustedNeighbors)], {
-    color: 'purple',
+    color: "purple",
   });
 };

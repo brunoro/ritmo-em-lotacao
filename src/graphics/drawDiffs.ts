@@ -1,15 +1,15 @@
-import { HexBins, HexID, countDiff } from 'src/hexBins';
-import { drawLabel, LabelLayer } from './drawLabel';
-import { drawVector, VectorLayer } from './drawVector';
-import { latLng } from 'src/geo';
-import * as h3 from 'h3-js';
-import * as R from 'ramda';
+import { HexBins, HexID, countDiff } from "../hexBins";
+import { drawLabel, LabelLayer } from "./drawLabel";
+import { drawVector, VectorLayer } from "./drawVector";
+import { latLng } from "../geo";
+import * as h3 from "h3-js";
+import * as R from "ramda";
 
 type DiffLayers = { vectors: VectorLayer[]; labels: LabelLayer[] };
 
 export const drawDiffs = (frames: HexBins[], ids: HexID[]): DiffLayers => {
   if (frames.length < 2) {
-    console.log('drawDiffs needs at least 2 frames');
+    console.log("drawDiffs needs at least 2 frames");
     return { vectors: [], labels: [] };
   }
 

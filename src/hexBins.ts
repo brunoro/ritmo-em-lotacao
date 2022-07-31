@@ -37,4 +37,36 @@ const allFrameHexIDs = (frames: HexBins[]): string[] => {
   return Array.from(all);
 };
 
-export { hexBins, HexBins, HexID, countDiff, allFrameHexIDs };
+const interpolateHexBins = (
+  a: HexBins,
+  b: HexBins,
+  count: number
+): HexBins[] => {
+  const frames = [a];
+
+  // a
+  for (const id in a) {
+    const va = a[id];
+    const vb = b[id];
+  }
+
+  for (const id in b) {
+    // b NOT IN a
+    if (a[id] != null) {
+      continue;
+    }
+  }
+
+  frames.push(b);
+
+  return frames;
+};
+
+export {
+  HexBins,
+  HexID,
+  hexBins,
+  countDiff,
+  allFrameHexIDs,
+  interpolateHexBins,
+};

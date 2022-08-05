@@ -1,9 +1,17 @@
+import * as R from "ramda";
 import * as h3 from "h3-js";
 import * as L from "leaflet";
 import geojson2h3 from "geojson2h3";
 
-import { hslToHex } from "../color";
-import { HexBins } from "../hexBins";
+import { hslToHex } from "./color";
+import { HexBins, HexID, countDiff } from "./hexBins";
+import { LatLng, Vector, latLng } from "./geo";
+
+export type VectorLayer = L.Polyline;
+
+export const drawVector = (vector: Vector): VectorLayer | null => {
+  return L.polyline(vector, { color: "purple" });
+};
 
 export type HexBinLayer = L.GeoJSON;
 type CountFeature = { count: number };
@@ -33,3 +41,13 @@ export const drawHexBins = (bins: HexBins): HexBinLayer => {
     // onEachFeature: (_feat, layer) => layer.on({ click: hexLayerOnClick }),
   });
 };
+
+export type LabelLayer = L.Marker;
+
+export const drawLabel = (coord: LatLng, text: string): LabelLayer =>
+  L.marker(coord, {
+    icon: L.divIcon({
+      className: "hex-label",
+      html: text,
+    }),
+  });

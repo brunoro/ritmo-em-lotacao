@@ -1,7 +1,10 @@
-import * as h3 from 'h3-js';
+import * as h3 from "h3-js";
+import * as R from "ramda";
 
-type HexID = string;
-type HexBins = { [id: HexID]: number };
+import { LatLng, Vector, interpolateCoord, avgCoord } from "./geo";
+
+export type HexID = string;
+export type HexBins = { [id: HexID]: number };
 
 const hexBins = (coords: number[][], resolution: number): HexBins => {
   const bins: HexBins = {};
@@ -14,7 +17,7 @@ const hexBins = (coords: number[][], resolution: number): HexBins => {
 
 const countAtFrame = (frames: HexBins[], hexId: HexID, i: number): number => {
   if (i >= frames.length) {
-    throw 'countAtFrame: hexBin out of range';
+    throw "countAtFrame: hexBin out of range";
   }
 
   let count = 0;
@@ -37,36 +40,53 @@ const allFrameHexIDs = (frames: HexBins[]): string[] => {
   return Array.from(all);
 };
 
-const interpolateHexBins = (
-  a: HexBins,
-  b: HexBins,
-  count: number
-): HexBins[] => {
-  const frames = [a];
-
-  // a
-  for (const id in a) {
-    const va = a[id];
-    const vb = b[id];
+export const countDiffs = (frames: HexBins[], ids: HexID[]): HexBins => {
+  if (frames.length < 2) {
+    console.warn("drawDiffs needs at least 2 frames");
+    return {};
   }
 
-  for (const id in b) {
-    // b NOT IN a
-    if (a[id] != null) {
-      continue;
-    }
+  const countFrameDiffs = R.curry(countDiff)(frames);
+  return R.zipObj(
+    ids,
+    ids.map((id) => countFrameDiffs(id))
+  );
+};
+
+export const diffVector = (
+  counts: { [id: HexID]: number },
+  coords: { [id: HexID]: LatLng },
+  id: HexID
+): Vector | null => {
+  const center = coords[id];
+  const count = counts[id];
+
+  // only count outbound vectors
+  if (!count || count == 0) {
+    return null;
   }
 
-  frames.push(b);
+  const neighbors = h3.kRing(id, 1);
+  neighbors.shift();
 
-  return frames;
+  // TODO: precompute neighbors
+  const adjustedNeighbors = neighbors
+    .map((nID: HexID) => {
+      const nCount = counts[nID];
+      // only count outbound vectors
+      if (!nCount || nCount == 0 || count >= nCount) {
+        return null;
+      }
+      const p = (nCount - count) / Math.max(nCount, count);
+      const nCenter = coords[nID];
+      return interpolateCoord(center, nCenter, p);
+    })
+    .filter(R.identity) as LatLng[];
+
+  if (adjustedNeighbors.length == 0) {
+    return null;
+  }
+  return [center, avgCoord(adjustedNeighbors)];
 };
 
-export {
-  HexBins,
-  HexID,
-  hexBins,
-  countDiff,
-  allFrameHexIDs,
-  interpolateHexBins,
-};
+export { hexBins, countDiff, allFrameHexIDs };

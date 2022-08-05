@@ -1,5 +1,7 @@
 import "./leaflet.css";
+import * as R from "ramda";
 import * as L from "leaflet";
+import * as h3 from "h3-js";
 import "leaflet-providers";
 
 import {
@@ -7,15 +9,21 @@ import {
   LabelLayer,
   VectorLayer,
   drawHexBins,
-  drawDiffs,
+  drawVector,
+  drawLabel,
 } from "./graphics";
-import { hexBins, allFrameHexIDs } from "./hexBins";
+import {
+  HexID,
+  hexBins,
+  allFrameHexIDs,
+  countDiffs,
+  diffVector,
+} from "./hexBins";
+import { latLng } from "./geo";
 import { sleep } from "./sleep";
 import frames from "./snapshots.json";
 
 let map: L.Map | null = null;
-
-console.log(">>>>> aqui", frames);
 
 // layers
 const hexLayers: L.FeatureGroup<HexBinLayer> = L.featureGroup();
@@ -79,12 +87,30 @@ const draw = () => {
   hexLayers.addLayer(drawHexBins(bins[1]));
 
   const ids = allFrameHexIDs(bins);
-  const { labels, vectors } = drawDiffs(bins, ids);
+  const coords = R.zipObj(
+    ids,
+    ids.map((id) => latLng(h3.h3ToGeo(id)))
+  );
+  const diffs = countDiffs(bins, ids);
+  const getDiffVector = R.curry(diffVector)(diffs)(coords);
 
   diffLabels.clearLayers();
-  labels.map((layer: LabelLayer) => diffLabels.addLayer(layer));
   diffVectors.clearLayers();
-  vectors.map((layer: VectorLayer) => diffVectors.addLayer(layer));
+
+  ids.forEach((id: HexID) => {
+    const vector = getDiffVector(id);
+    if (vector) {
+      const vectorLayer = drawVector(vector);
+      if (vectorLayer) {
+        diffVectors.addLayer(vectorLayer);
+
+        const labelLayer = drawLabel(coords[id], diffs[id].toString());
+        diffLabels.addLayer(labelLayer);
+      }
+    }
+  });
+
+  // const avgVector = drawVector()
 };
 
 const initMap = () => {
@@ -113,22 +139,25 @@ const initMap = () => {
 };
 
 const setFrameSelectorRange = () => {
-  const input = document.getElementById("frameSelector");
+  const input = getInputElement("frameSelector");
   if (!input) {
     return;
   }
   input.setAttribute("max", `${frames.length - 1}`);
   input.setAttribute("min", "1");
-  input.setAttribute("value", "1");
+  input.value = "1";
 };
 
 const play = async () => {
-  const input = document.getElementById("frameSelector");
-  if (!input) {
+  const input = getInputElement("frameSelector");
+  const span = document.getElementById("frameNumber");
+
+  if (!input || !span) {
     return;
   }
   for (let i = 1; i < frames.length; i++) {
-    input.setAttribute("value", `${i}`);
+    input.value = `${i}`;
+    span.innerText = `${i}`;
     draw();
     await sleep(1000);
   }

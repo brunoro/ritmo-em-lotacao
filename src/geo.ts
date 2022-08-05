@@ -1,8 +1,8 @@
-import * as L from 'leaflet';
+import * as L from "leaflet";
 
-type LatLng = L.LatLng;
-
-type LatLngMap = { [k: string]: LatLng };
+export type LatLng = L.LatLng;
+export type LatLngMap = { [k: string]: LatLng };
+export type Vector = [LatLng, LatLng];
 
 const latLng = ([lat, lng]: number[]) => L.latLng(lat, lng);
 
@@ -20,4 +20,4 @@ const avgCoord = (coords: LatLng[]): LatLng => {
   return L.latLng(latAcc / coords.length, lngAcc / coords.length);
 };
 
-export { latLng, LatLng, LatLngMap, interpolateCoord, avgCoord };
+export { latLng, interpolateCoord, avgCoord };

@@ -20,4 +20,12 @@ const avgCoord = (coords: LatLng[]): LatLng => {
   return L.latLng(latAcc / coords.length, lngAcc / coords.length);
 };
 
-export { latLng, interpolateCoord, avgCoord };
+const interpolateVector = (
+  [aFrom, aTo]: Vector,
+  [bFrom, bTo]: Vector,
+  p: number
+): Vector => {
+  return [interpolateCoord(aFrom, bFrom, p), interpolateCoord(aTo, bTo, p)];
+};
+
+export { latLng, interpolateCoord, avgCoord, interpolateVector };

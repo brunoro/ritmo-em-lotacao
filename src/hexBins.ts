@@ -1,4 +1,5 @@
 import * as h3 from "h3-js";
+import { latLng } from "leaflet";
 import * as R from "ramda";
 
 import { LatLng, Vector, interpolateCoord, avgCoord } from "./geo";

@@ -1,16 +1,15 @@
-import * as R from "ramda";
 import * as h3 from "h3-js";
 import * as L from "leaflet";
 import geojson2h3 from "geojson2h3";
 
 import { hslToHex } from "./color";
-import { HexBins, HexID, countDiff } from "./hexBins";
-import { LatLng, Vector, latLng } from "./geo";
+import { HexBins } from "./hexBins";
+import { LatLng, Vector } from "./geo";
 
 export type VectorLayer = L.Polyline;
 
-export const drawVector = (vector: Vector): VectorLayer | null => {
-  return L.polyline(vector, { color: "purple" });
+export const drawVector = (vector: Vector, color: string): VectorLayer => {
+  return L.polyline(vector, { color });
 };
 
 export type HexBinLayer = L.GeoJSON;
